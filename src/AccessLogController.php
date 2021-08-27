@@ -172,6 +172,6 @@ class accessLogController
     }
 
     private function _success(array $result): string {
-        return json_encode($result, JSON_UNESCAPED_UNICODE);
+        return json_encode($result, JSON_PRETTY_PRINT);
     }
 }
