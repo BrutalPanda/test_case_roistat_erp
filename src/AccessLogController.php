@@ -33,7 +33,7 @@ class accessLogController
     private const SEARCH_SYSTEM_LABEL_MSN     = 'MSN';
     private const SEARCH_SYSTEM_LABEL_BING    = 'Bing';
 
-    public function processLogFile(string $pathToLogFile): string {
+    public function processLogFile(?string $pathToLogFile): string {
         if(!$this->_isNonEmptyString($pathToLogFile)) {
             return $this->_error('Empty path to file');
         }
