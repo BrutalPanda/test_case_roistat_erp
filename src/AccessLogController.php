@@ -61,7 +61,7 @@ class accessLogController
 
             $totalRecords++;
             $record = $this->_parseAndFormatRecord($fileRow);
-            if (count($record) == 0) {
+            if (count($record) === 0) {
                 $parseFails++;
                 continue;
             }
@@ -90,7 +90,7 @@ class accessLogController
             $traffic += $record[self::FIELD_LABEL_TRAFFIC];
         }
 
-        return $this->_success(json_encode([
+        return $this->_success([
             'total'        => $totalRecords,
             'parse_fails'  => $parseFails,
             'views'        => $totalViews,
@@ -98,7 +98,7 @@ class accessLogController
             'urls'         => count($uniqUrls),
             'status_codes' => $statusCodes,
             'crawlers'     => $crawlers
-        ]));
+        ]);
     }
 
     private function _isNonEmptyString(?string $value): bool {
@@ -168,17 +168,10 @@ class accessLogController
     }
 
     private function _error(string $message): string {
-        return $this->_response('error', $message);
+        return "Error: {$message}!";
     }
 
-    private function _success(string $message): string {
-        return $this->_response('success', $message);
-    }
-
-    private function _response(string $status, string $message): string {
-        return json_encode([
-            'status' => $status,
-            'message' => $message,
-        ], JSON_UNESCAPED_UNICODE);
+    private function _success(array $result): string {
+        return json_encode($result, JSON_UNESCAPED_UNICODE);
     }
 }
