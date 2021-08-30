@@ -17,6 +17,8 @@ class accessLogController
 
     private const ELEMENTS_IN_DECODED_RECORD = 14;
 
+    private const STATUS_OK = 200;
+
     private const USER_AGENT_PART_BOT_GOOGLE  = 'googlebot';
     private const USER_AGENT_PART_BOT_YANDEX  = 'yandex.com/bots';
     private const USER_AGENT_PART_BOT_MAIL    = 'mail.ru_bot';
@@ -42,12 +44,18 @@ class accessLogController
         }
 
         $totalRecords = 0;
-        $parseFails   = 0;
-        $totalViews   = 0;
         $traffic      = 0;
         $uniqUrls     = [];
         $statusCodes  = [];
-        $crawlers     = [];
+        $crawlers     = [
+            self::SEARCH_SYSTEM_LABEL_GOOGLE  => 0,
+            self::SEARCH_SYSTEM_LABEL_YANDEX  => 0,
+            self::SEARCH_SYSTEM_LABEL_MAIL    => 0,
+            self::SEARCH_SYSTEM_LABEL_RAMBLER => 0,
+            self::SEARCH_SYSTEM_LABEL_YAHOO   => 0,
+            self::SEARCH_SYSTEM_LABEL_MSN     => 0,
+            self::SEARCH_SYSTEM_LABEL_BING    => 0,
+        ];
 
         $fileStream = $this->_openFileStream($pathToLogFile);
         if (!is_resource($fileStream)) {
@@ -62,7 +70,6 @@ class accessLogController
             $totalRecords++;
             $record = $this->_parseAndFormatRecord($fileRow);
             if (count($record) === 0) {
-                $parseFails++;
                 continue;
             }
 
@@ -76,28 +83,22 @@ class accessLogController
                 $statusCodes[$record[self::FIELD_LABEL_STATUS_CODE]] = 1;
             }
 
-            $searchSystem = $this->_determineSearchBot($record[self::FIELD_LABEL_USER_AGENT]);
-            if ($searchSystem === null) {
-                $totalViews++;
-            } else {
-                if (array_key_exists($searchSystem, $crawlers)) {
-                    $crawlers[$searchSystem]++;
-                } else {
-                    $crawlers[$searchSystem] = 1;
-                }
+            if ($record[self::FIELD_LABEL_STATUS_CODE] === self::STATUS_OK) {
+                $traffic += $record[self::FIELD_LABEL_TRAFFIC];
             }
 
-            $traffic += $record[self::FIELD_LABEL_TRAFFIC];
+            $searchSystem = $this->_determineSearchBot($record[self::FIELD_LABEL_USER_AGENT]);
+            if ($searchSystem !== null && array_key_exists($searchSystem, $crawlers)) {
+                $crawlers[$searchSystem]++;
+            }
         }
 
         return $this->_success([
-            'total'        => $totalRecords,
-            'parse_fails'  => $parseFails,
-            'views'        => $totalViews,
-            'traffic'      => $traffic,
+            'views'        => $totalRecords,
             'urls'         => count($uniqUrls),
-            'status_codes' => $statusCodes,
-            'crawlers'     => $crawlers
+            'traffic'      => $traffic,
+            'crawlers'     => $crawlers,
+            'status_codes' => $statusCodes
         ]);
     }
 
@@ -135,7 +136,7 @@ class accessLogController
         if (count($parsedFileRow) === self::ELEMENTS_IN_DECODED_RECORD) {
             return [
                 self::FIELD_LABEL_URL         => $parsedFileRow[self::FIELD_ID_URL],
-                self::FIELD_LABEL_STATUS_CODE => $parsedFileRow[self::FIELD_ID_STATUS_CODE],
+                self::FIELD_LABEL_STATUS_CODE => (int) $parsedFileRow[self::FIELD_ID_STATUS_CODE],
                 self::FIELD_LABEL_TRAFFIC     => (int) $parsedFileRow[self::FIELD_ID_TRAFFIC],
                 self::FIELD_LABEL_USER_AGENT  => strtolower($parsedFileRow[self::FIELD_ID_USER_AGENT]),
             ];
